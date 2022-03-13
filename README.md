@@ -1,12 +1,16 @@
 # github-enricher
 
-This tool helps enriches a list of GitHub usernames into email addresses and other profile data.
+`github-enricher` enriches GitHub data.
 
-`github-enricher` is CSV oriented. It accepts CSV-formatted input and emits CSV-formatted output.
+`github-enricher` accepts CSV-formatted input and emits CSV-formatted output.
 
-## Redis Cache
+## Cache
 
-`github-enricher` relies on Redis as a caching layer.
+`github-enricher` requires Redis as caching layer. This is absolutely essential for performance, as cacheless enrichment is bottlenecked by GitHub API limits and expensive clones.
+
+The `REDIS_ADDR` and `REDIS_PASSWORD` environment variables are used to configure the cache client.
+
+The cache allows for fast incremental enrichment.
 
 ## Columns
 
@@ -19,17 +23,23 @@ This tool helps enriches a list of GitHub usernames into email addresses and oth
 
 Any unrecogized columns are passed through verbatim.
 
-The first line of input and output is always a header.
+The first line of the input and output is always a header.
 
 ## Basic Usage
 
-```bash
-$ echo "name,repo_name,ref
+input.csv:
+
+```csv
+TensorFlower Gardener,keras-team/keras,9b14e16b8cc93abcc21355115a7a18c34d385281
 Chromium LUCI CQ,chromium/chromium,c33d4dbfd275d5659cc2c79cbec75810ae4bdd37
 TypeScript Bot,kitsonk/TypeScript,2d80473c781818b1712c6106fd8b1faea59d25ae
 GitHub,Azure/azure-sdk-for-python,23decbe4b61626b6a37f1f23dcf18514a2f445a5
-gVisor bot,google/gvisor,1fcaa119a53ada26ade9fb1405cd593204699adc
-" | go run github.com/ammario/github-enricher
-email,orgname
-ammar@ammar.io,@coderhq
+```
+
+```bash
+$ go run github.com/ammario/github-enricher < input.csv
+name,repo_name,commit,email
+TensorFlower Gardener,keras-team/keras,9b14e16b8cc93abcc21355115a7a18c34d385281,mattdangerw@google.com
+Chromium LUCI CQ,chromium/chromium,c33d4dbfd275d5659cc2c79cbec75810ae4bdd37,ppz@chromium.org
+TypeScript Bot,kitsonk/TypeScript,2d80473c781818b1712c6106fd8b1faea59d25ae,typescriptbot@microsoft.com
 ```
