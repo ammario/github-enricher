@@ -2,7 +2,8 @@
 
 `github-enricher` enriches GitHub data.
 
-`github-enricher` accepts CSV-formatted input and emits CSV-formatted output.
+It accepts CSV-formatted input and emits CSV-formatted output. It's a good sidekick to [GitHub's official
+bigquery dataset](https://cloud.google.com/blog/topics/public-datasets/github-on-bigquery-analyze-all-the-open-source-code), which redacts email addresses.
 
 ## Cache
 
@@ -25,7 +26,9 @@ Any unrecogized columns are passed through verbatim.
 
 The first line of the input and output is always a header.
 
-## Basic Usage
+## Example
+
+This examples enriches email addresses from a list of commits. `name` is passed through untouched.
 
 input.csv:
 
@@ -35,6 +38,8 @@ Chromium LUCI CQ,chromium/chromium,c33d4dbfd275d5659cc2c79cbec75810ae4bdd37
 TypeScript Bot,kitsonk/TypeScript,2d80473c781818b1712c6106fd8b1faea59d25ae
 GitHub,Azure/azure-sdk-for-python,23decbe4b61626b6a37f1f23dcf18514a2f445a5
 ```
+
+shell invokation:
 
 ```bash
 $ go run github.com/ammario/github-enricher < input.csv
