@@ -10,11 +10,12 @@ This tool helps enriches a list of GitHub usernames into email addresses and oth
 
 ## Columns
 
-| Name      | Description                           | Dependencies       |
-| --------- | ------------------------------------- | ------------------ |
-| repo_name | Repository name, e.g `torvalds/linux` | Cannot be enriched |
-| ref       | e.g   `master`                        | Cannot be enriched |
-| email     | user's email as captured from commit  | repo_name, ref     |
+| Name      | Description                              | Dependencies       |
+| --------- | ---------------------------------------- | ------------------ |
+| repo_name | Repository name, e.g `torvalds/linux`    | Cannot be enriched |
+| ref       | e.g   `master`                           | Cannot be enriched |
+| email     | user's email as captured from commit     | repo_name, ref     |
+| name      | user's full name as captured from commit | repo_name, ref     |
 
 Any unrecogized columns are passed through verbatim.
 

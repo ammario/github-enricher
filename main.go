@@ -13,7 +13,7 @@ func main() {
 		Short:   "Enrich GitHub data",
 		Example: "github-enricher < input.csv > output.csv",
 		Run: func(cmd *cobra.Command, args []string) {
-			e := enricherEngine{
+			e := engine{
 				Log: flog.New(),
 			}
 			err := e.Run(os.Stdout, os.Stdin)
