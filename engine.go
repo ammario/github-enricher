@@ -8,13 +8,12 @@ import (
 	"time"
 
 	"github.com/coder/flog"
-	"github.com/go-redis/redis/v8"
 	"github.com/samber/lo"
 )
 
 type engine struct {
-	Log   *flog.Logger
-	Redis *redis.Client
+	Log       *flog.Logger
+	Enrichers []enricher
 }
 
 // Run is the main enrichment loop
@@ -31,20 +30,17 @@ func (eng engine) Run(w io.Writer, r io.Reader) error {
 
 	// Form output header from input header and additional possible enrichers
 	outputHeader := append([]string(nil), inputHeader...)
-	var usedEnrichers []enricher
-findEnrichers:
-	for _, enricher := range enrichers {
+	for _, enricher := range eng.Enrichers {
 		if lo.Contains(inputHeader, enricher.FieldName) {
-			continue
+			return fmt.Errorf("enrich column %v already exists in input", enricher.FieldName)
 		}
-		// Break if dependencies don't exist in input
+		// Fail if dependencies don't exist
 		for _, dep := range enricher.Deps {
-			if !lo.Contains(inputHeader, dep) {
-				continue findEnrichers
+			if !lo.Contains(inputHeader, dep) && !lo.Contains(outputHeader, dep) {
+				return fmt.Errorf("enrich column %v has unmet dependency %v (try rearranging?)", enricher.FieldName, dep)
 			}
 		}
 		outputHeader = append(outputHeader, enricher.FieldName)
-		usedEnrichers = append(usedEnrichers, eng.cachedEnricher(enricher))
 	}
 
 	err = csvWriter.Write(outputHeader)
@@ -61,7 +57,7 @@ findEnrichers:
 			}
 			return fmt.Errorf("read row: %w", err)
 		}
-		row, err = eng.processRow(row, inputHeader, usedEnrichers)
+		row, err = eng.processRow(row, inputHeader)
 		if err != nil {
 			return err
 		}
@@ -73,17 +69,18 @@ findEnrichers:
 	}
 }
 
-func (eng *engine) processRow(row []string, inputHeader []string, usedEnrichers []enricher) ([]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+func (eng *engine) processRow(row []string, inputHeader []string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
 	defer cancel()
 
 	rowMap := make(map[string]string, len(row))
 	for i, v := range row {
 		rowMap[inputHeader[i]] = v
 	}
-	for _, e := range usedEnrichers {
+	for _, e := range eng.Enrichers {
 		v, err := e.Run(ctx, rowMap)
 		row = append(row, v)
+		rowMap[e.FieldName] = v
 		if err != nil {
 			eng.Log.Error("%q enrich failed: %+v", e.FieldName, err)
 		}

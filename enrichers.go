@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/go-git/go-git/v5/storage/filesystem"
 )
 
 // An enricher modifies the row before output.
@@ -24,28 +27,37 @@ type enricher struct {
 }
 
 func readCommit(repoName string, commitHash string) (*object.Commit, error) {
-	var (
-		gitURI  = fmt.Sprintf("https://github.com/%s.git", repoName)
-		storage = memory.NewStorage()
-		refSpec = config.RefSpec(fmt.Sprintf("%s:%s", commitHash, commitHash))
-	)
-
 	if commitHash == "" {
 		return nil, fmt.Errorf("ref is empty")
 	}
+
+	var (
+		gitURI  = fmt.Sprintf("https://github.com/%s.git", repoName)
+		refSpec = config.RefSpec(fmt.Sprintf("%s:%s", commitHash, commitHash))
+	)
+
+	// Use deterministic storage directory to speedup commit retrieval on common repos.
+	storageDir := filepath.Join(os.TempDir(), "github-enricher", repoName)
+	err := os.MkdirAll(storageDir, 0750)
+	if err != nil {
+		return nil, err
+	}
+	fs := osfs.New(storageDir)
+
+	storage := filesystem.NewStorage(fs, cache.NewObjectLRU(cache.GiByte*4))
 	c := &config.RemoteConfig{
 		Name:  "origin",
 		URLs:  []string{gitURI},
 		Fetch: []config.RefSpec{refSpec},
 	}
 	r := git.NewRemote(storage, c)
-	fmt.Fprintf(os.Stderr, "shallow cloning %s\n", gitURI)
-	err := r.Fetch(&git.FetchOptions{
+	fmt.Fprintf(os.Stderr, "shallow cloning %s to %s\n", gitURI, storageDir)
+	err = r.Fetch(&git.FetchOptions{
 		Depth:    1,
 		RefSpecs: []config.RefSpec{refSpec},
 		Progress: os.Stderr,
 	})
-	if err != nil {
+	if err != git.NoErrAlreadyUpToDate && err != nil {
 		return nil, fmt.Errorf("fetch: %w", err)
 	}
 
@@ -56,7 +68,7 @@ func readCommit(repoName string, commitHash string) (*object.Commit, error) {
 	return commit, nil
 }
 
-var enrichers = []enricher{
+var allEnrichers = []enricher{
 	{
 		FieldName: "email",
 		Deps:      []string{"repo_name", "commit"},

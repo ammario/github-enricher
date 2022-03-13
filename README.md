@@ -5,22 +5,31 @@
 It accepts CSV-formatted input and emits CSV-formatted output. It's a good sidekick to [GitHub's official
 bigquery dataset](https://cloud.google.com/blog/topics/public-datasets/github-on-bigquery-analyze-all-the-open-source-code), which redacts email addresses.
 
-## Cache
+## Caching
 
-`github-enricher` requires Redis as caching layer. This is absolutely essential for performance, as cacheless enrichment is bottlenecked by GitHub API limits and expensive clones.
+`github-enricher` is design to for fast incremental enrichment. Thus, it requires on Redis and the filesystem
+for caching.
+
+### Redis
 
 The `REDIS_ADDR` and `REDIS_PASSWORD` environment variables are used to configure the cache client.
 
-The cache allows for fast incremental enrichment.
+Make sure your redis is persisting (e.g `save 60 1` in your redis.conf) for incremental enrichment to work.
+
+### Filesystem
+
+Even though repos are shallow cloned, large repos can take minutes to retrieve a single commit. Repositories
+are cloned to the `github-enricher` folder in your OS tempdir.
 
 ## Columns
 
-| Name      | Description                              | Dependencies       |
-| --------- | ---------------------------------------- | ------------------ |
-| repo_name | Repository name, e.g `torvalds/linux`    | Cannot be enriched |
-| ref       | e.g   `master`                           | Cannot be enriched |
-| email     | user's email as captured from commit     | repo_name, ref     |
-| name      | user's full name as captured from commit | repo_name, ref     |
+| Name      | Description                                                                       | Dependencies       |
+| --------- | --------------------------------------------------------------------------------- | ------------------ |
+| repo_name | Repository name, e.g `torvalds/linux`                                             | Cannot be enriched |
+| ref       | e.g   `master`                                                                    | Cannot be enriched |
+| email     | user's email as captured from commit                                              | repo_name, ref     |
+| name      | user's full name as captured from commit                                          | repo_name, ref     |
+| gender    | probable gender from first name [hstove/gender](https://github.com/hstove/gender) | name     |
 
 Any unrecogized columns are passed through verbatim.
 
