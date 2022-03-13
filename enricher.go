@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/coder/flog"
 	"github.com/go-git/go-git/v5"
@@ -13,24 +14,29 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/go-redis/redis/v8"
 	"github.com/samber/lo"
 )
 
 type engine struct {
-	Log *flog.Logger
+	Log   *flog.Logger
+	Redis *redis.Client
 }
 
 // An enricher modifies the row before output.
 type enricher struct {
-	FieldName    string
-	Dependencies []string
-	Run          func(ctx context.Context, row map[string]string) (string, error)
+	FieldName string
+	// Deps is the set of keys required in the row to enrich the
+	// data the first time.
+	Deps []string
+	// CacheDeps is the set of keys to associate with each cache entry.
+	CacheDeps []string
+	Run       func(ctx context.Context, row map[string]string) (string, error)
 }
 
 func readCommit(repoName string, commitHash string) (*object.Commit, error) {
-
 	var (
-		gitURI  = fmt.Sprintf("https://github.com/%s.git")
+		gitURI  = fmt.Sprintf("https://github.com/%s.git", repoName)
 		storage = memory.NewStorage()
 		refSpec = config.RefSpec(fmt.Sprintf("%s:%s", commitHash, commitHash))
 	)
@@ -62,14 +68,27 @@ func readCommit(repoName string, commitHash string) (*object.Commit, error) {
 
 var enrichers = []enricher{
 	{
-		FieldName:    "email",
-		Dependencies: []string{"repo_name", "commit"},
+		FieldName: "email",
+		Deps:      []string{"repo_name", "commit"},
+		CacheDeps: []string{"commit"},
 		Run: func(ctx context.Context, row map[string]string) (string, error) {
 			commit, err := readCommit(row["repo_name"], row["commit"])
 			if err != nil {
 				return "", err
 			}
 			return commit.Author.Email, nil
+		},
+	},
+	{
+		FieldName: "name",
+		Deps:      []string{"repo_name", "commit"},
+		CacheDeps: []string{"commit"},
+		Run: func(ctx context.Context, row map[string]string) (string, error) {
+			commit, err := readCommit(row["repo_name"], row["commit"])
+			if err != nil {
+				return "", err
+			}
+			return commit.Author.Name, nil
 		},
 	},
 }
@@ -95,13 +114,13 @@ findEnrichers:
 			continue
 		}
 		// Break if dependencies don't exist in input
-		for _, dep := range enricher.Dependencies {
+		for _, dep := range enricher.Deps {
 			if !lo.Contains(inputHeader, dep) {
 				continue findEnrichers
 			}
 		}
 		outputHeader = append(outputHeader, enricher.FieldName)
-		usedEnrichers = append(usedEnrichers, enricher)
+		usedEnrichers = append(usedEnrichers, eng.cachedEnricher(enricher))
 	}
 
 	err = csvWriter.Write(outputHeader)
@@ -118,18 +137,9 @@ findEnrichers:
 			}
 			return fmt.Errorf("read row: %w", err)
 		}
-
-		rowMap := make(map[string]string, len(row))
-		for i, v := range row {
-			rowMap[inputHeader[i]] = v
-		}
-
-		for _, e := range usedEnrichers {
-			v, err := e.Run(context.Background(), rowMap)
-			row = append(row, v)
-			if err != nil {
-				eng.Log.Error("%q enrich failed: %+v", e.FieldName, err)
-			}
+		row, err = eng.processRow(row, inputHeader, usedEnrichers)
+		if err != nil {
+			return err
 		}
 		err = csvWriter.Write(row)
 		if err != nil {
@@ -137,4 +147,22 @@ findEnrichers:
 		}
 		csvWriter.Flush()
 	}
+}
+
+func (eng *engine) processRow(row []string, inputHeader []string, usedEnrichers []enricher) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	rowMap := make(map[string]string, len(row))
+	for i, v := range row {
+		rowMap[inputHeader[i]] = v
+	}
+	for _, e := range usedEnrichers {
+		v, err := e.Run(ctx, rowMap)
+		row = append(row, v)
+		if err != nil {
+			eng.Log.Error("%q enrich failed: %+v", e.FieldName, err)
+		}
+	}
+	return row, nil
 }
