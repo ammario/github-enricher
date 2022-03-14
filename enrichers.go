@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hstove/gender/classifier"
+	"github.com/samber/lo"
 )
 
 // An enricher modifies the row before output.
@@ -49,6 +50,24 @@ func setupEnrichers() ([]enricher, error) {
 					return "", err
 				}
 				return commit.name, nil
+			},
+		},
+		{
+			FieldName: "lastname",
+			Deps:      []string{"name"},
+			CacheDeps: []string{"name"},
+			Run: func(ctx context.Context, row map[string]string) (string, error) {
+				name, _ := lo.Last(strings.Split(row["name"], " "))
+				return name, nil
+			},
+		},
+		{
+			FieldName: "firstname",
+			Deps:      []string{"name"},
+			CacheDeps: []string{"name"},
+			Run: func(ctx context.Context, row map[string]string) (string, error) {
+				name := strings.Split(row["name"], " ")[0]
+				return name, nil
 			},
 		},
 	}...)

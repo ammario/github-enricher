@@ -63,12 +63,13 @@ func readCommitAPI(ctx context.Context, cli *github.Client, repoName string, com
 		if recover() != nil {
 			fmt.Printf("commit: %+v\n", ct)
 		}
+		err = fmt.Errorf("paniced")
 	}()
 
 	return &commit{
 		email: *ct.Commit.Author.Email,
 		name:  *ct.Commit.Author.Email,
-	}, nil
+	}, err
 }
 
 func readCommitFetch(repoName string, commitHash string) (*commit, error) {
