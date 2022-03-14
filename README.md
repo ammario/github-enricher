@@ -29,7 +29,7 @@ are cloned to the `github-enricher` folder in your OS tempdir.
 | ref       | e.g   `master`                                                                    | Cannot be enriched |
 | email     | user's email as captured from commit                                              | repo_name, ref     |
 | name      | user's full name as captured from commit                                          | repo_name, ref     |
-| gender    | probable gender from first name [hstove/gender](https://github.com/hstove/gender) | name     |
+| gender    | probable gender from first name [hstove/gender](https://github.com/hstove/gender) | name               |
 
 Any unrecogized columns are passed through verbatim.
 

@@ -32,7 +32,7 @@ func (eng engine) Run(w io.Writer, r io.Reader) error {
 	outputHeader := append([]string(nil), inputHeader...)
 	for _, enricher := range eng.Enrichers {
 		if lo.Contains(inputHeader, enricher.FieldName) {
-			return fmt.Errorf("enrich column %v already exists in input", enricher.FieldName)
+			return fmt.Errorf("enrich column %q already exists in input", enricher.FieldName)
 		}
 		// Fail if dependencies don't exist
 		for _, dep := range enricher.Deps {

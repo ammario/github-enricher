@@ -37,6 +37,11 @@ func main() {
 				flog.Fatal("redis ping: %+v", err)
 			}
 
+			allEnrichers, err := setupEnrichers()
+			if err != nil {
+				flog.Fatal("setup enrichers: %+v", err)
+			}
+
 			e := engine{
 				Log: flog.New(),
 				Enrichers: lo.Map(enrichers, func(name string, _ int) enricher {
@@ -48,7 +53,7 @@ func main() {
 			}
 			err = e.Run(os.Stdout, os.Stdin)
 			if err != nil {
-				flog.Fatal("%v+", err)
+				flog.Fatal("%+v", err)
 			}
 		},
 	}
@@ -56,11 +61,7 @@ func main() {
 		&enrichers,
 		"enrichers",
 		"e",
-		lo.Map(
-			allEnrichers, func(t enricher, _ int) string {
-				return t.FieldName
-			},
-		),
+		[]string{"email", "name", "gender"},
 		"The list of enabled enrichers",
 	)
 	err := cmd.Execute()
