@@ -8,5 +8,5 @@ import (
 var nameRegex = regexp.MustCompile(`[a-z ,.'-]+`)
 
 func cleanName(n string) string {
-	return strings.Join(nameRegex.FindStringSubmatch(n), "")
+	return strings.Join(nameRegex.FindAllString(n, 12), "")
 }
