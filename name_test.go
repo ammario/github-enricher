@@ -14,6 +14,7 @@ func Test_cleanName(t *testing.T) {
 		{"nothing", args{"david"}, "david"},
 		{"no weird symbols", args{"d@vid"}, "dvid"},
 		{"no emails", args{"gel@microsoft.com"}, "gelmicrosoft.com"},
+		{"Oliver", args{"Oliver"}, "Oliver"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

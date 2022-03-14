@@ -5,8 +5,11 @@ import (
 	"strings"
 )
 
-var nameRegex = regexp.MustCompile(`[a-z ,.'-]+`)
+var nameRegex = regexp.MustCompile(`[A-z ,.'-]*`)
 
 func cleanName(n string) string {
-	return strings.Join(nameRegex.FindAllString(n, 12), "")
+	matches := nameRegex.FindAllString(n, -1)
+	// fmt.Printf("%+v\n", matches)
+	cleaned := strings.Join(matches, "")
+	return cleaned
 }
