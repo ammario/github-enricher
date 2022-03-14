@@ -68,7 +68,7 @@ func readCommitAPI(ctx context.Context, cli *github.Client, repoName string, com
 
 	return &commit{
 		email: *ct.Commit.Author.Email,
-		name:  *ct.Commit.Author.Email,
+		name:  *ct.Commit.Author.Name,
 	}, err
 }
 

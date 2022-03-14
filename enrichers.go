@@ -55,7 +55,6 @@ func setupEnrichers() ([]enricher, error) {
 		{
 			FieldName: "lastname",
 			Deps:      []string{"name"},
-			CacheDeps: []string{"name"},
 			Run: func(ctx context.Context, row map[string]string) (string, error) {
 				name, _ := lo.Last(strings.Split(row["name"], " "))
 				return cleanName(name), nil
@@ -64,7 +63,6 @@ func setupEnrichers() ([]enricher, error) {
 		{
 			FieldName: "firstname",
 			Deps:      []string{"name"},
-			CacheDeps: []string{"name"},
 			Run: func(ctx context.Context, row map[string]string) (string, error) {
 				name := strings.Split(row["name"], " ")[0]
 				return cleanName(name), nil

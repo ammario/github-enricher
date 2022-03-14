@@ -37,7 +37,7 @@ func (eng engine) Run(w io.Writer, r io.Reader) error {
 		// Fail if dependencies don't exist
 		for _, dep := range enricher.Deps {
 			if !lo.Contains(inputHeader, dep) && !lo.Contains(outputHeader, dep) {
-				return fmt.Errorf("enrich column %vqhas unmet dependency %q (try rearranging?)", enricher.FieldName, dep)
+				return fmt.Errorf("enrich column %v has unmet dependency %q (try rearranging?)", enricher.FieldName, dep)
 			}
 		}
 		outputHeader = append(outputHeader, enricher.FieldName)

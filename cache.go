@@ -13,6 +13,10 @@ import (
 func cachedEnricher(log *flog.Logger, rd *redis.Client, e enricher) enricher {
 	ce := e
 	ce.Run = func(ctx context.Context, row map[string]string) (string, error) {
+		if len(ce.CacheDeps) == 0 {
+			return e.Run(ctx, row)
+		}
+
 		start := time.Now()
 		// Enrichment should be deterministic on dependencies, so use that as key.
 		var key strings.Builder
