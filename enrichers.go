@@ -74,7 +74,6 @@ func setupEnrichers() ([]enricher, error) {
 	enrichers = append(enrichers, enricher{
 		FieldName: "gender",
 		Deps:      []string{"name"},
-		CacheDeps: []string{"name"},
 		Run: func(ctx context.Context, row map[string]string) (string, error) {
 			firstName := strings.Split(row["name"], " ")[0]
 			gender, _ := classifier.Classify(genderClassifier, firstName)
