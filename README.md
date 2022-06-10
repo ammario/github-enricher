@@ -26,12 +26,13 @@ are cloned to the `github-enricher` folder in your OS tempdir.
 | Name      | Description                                                                       | Dependencies       |
 | --------- | --------------------------------------------------------------------------------- | ------------------ |
 | repo_name | Repository name, e.g `torvalds/linux`                                             | Cannot be enriched |
-| ref       | e.g   `master`                                                                    | Cannot be enriched |
+| ref       | e.g `master`                                                                      | Cannot be enriched |
 | email     | user's email as captured from commit                                              | repo_name, ref     |
 | name      | user's full name as captured from commit                                          | repo_name, ref     |
+| username  | GitHub login name                                                                 | repo_name, ref     |
 | gender    | probable gender from first name [hstove/gender](https://github.com/hstove/gender) | name               |
-| firstname    | first word in name | name               |
-| lastname    | last word in name| name               |
+| firstname | first word in name                                                                | name               |
+| lastname  | last word in name                                                                 | name               |
 
 Any unrecogized columns are passed through verbatim.
 

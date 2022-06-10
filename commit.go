@@ -21,8 +21,9 @@ import (
 )
 
 type commit struct {
-	email string
-	name  string
+	email    string
+	name     string
+	username string
 }
 
 func newGitHubClient(ctx context.Context) (*github.Client, error) {
@@ -48,7 +49,7 @@ func newGitHubClient(ctx context.Context) (*github.Client, error) {
 	return client, nil
 }
 
-func readCommitAPI(ctx context.Context, cli *github.Client, repoName string, commitHash string) (*commit, error) {
+func readCommitAPI(ctx context.Context, cli *github.Client, repoName string, commitHash string) (c *commit, err error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%v/commits/%v", repoName, commitHash), nil)
 	if err != nil {
 		return nil, fmt.Errorf("make request: %w", err)
@@ -60,16 +61,23 @@ func readCommitAPI(ctx context.Context, cli *github.Client, repoName string, com
 	}
 	defer resp.Body.Close()
 	defer func() {
-		if recover() != nil {
-			fmt.Printf("commit: %+v\n", ct)
+		if msg := recover(); msg != nil {
+			flog.Error("commit: %+v\nmsg: %+v", ct, msg)
+			err = fmt.Errorf("paniced")
 		}
-		err = fmt.Errorf("paniced")
 	}()
 
-	return &commit{
+	c = &commit{
 		email: *ct.Commit.Author.Email,
 		name:  *ct.Commit.Author.Name,
-	}, err
+	}
+
+	if ct.Author == nil {
+		c.username = "bot"
+	} else {
+		c.username = *ct.Author.Login
+	}
+	return c, err
 }
 
 func readCommitFetch(repoName string, commitHash string) (*commit, error) {

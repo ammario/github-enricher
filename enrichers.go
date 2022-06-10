@@ -30,10 +30,10 @@ func setupEnrichers() ([]enricher, error) {
 	enrichers = append(enrichers, []enricher{
 		{
 			FieldName: "email",
-			Deps:      []string{"repo_name", "commit"},
-			CacheDeps: []string{"commit"},
+			Deps:      []string{"repo_name", "ref"},
+			CacheDeps: []string{"ref"},
 			Run: func(ctx context.Context, row map[string]string) (string, error) {
-				commit, err := readCommit(ctx, githubClient, row["repo_name"], row["commit"])
+				commit, err := readCommit(ctx, githubClient, row["repo_name"], row["ref"])
 				if err != nil {
 					return "", err
 				}
@@ -42,14 +42,26 @@ func setupEnrichers() ([]enricher, error) {
 		},
 		{
 			FieldName: "name",
-			Deps:      []string{"repo_name", "commit"},
-			CacheDeps: []string{"commit"},
+			Deps:      []string{"repo_name", "ref"},
+			CacheDeps: []string{"ref"},
 			Run: func(ctx context.Context, row map[string]string) (string, error) {
-				commit, err := readCommit(ctx, githubClient, row["repo_name"], row["commit"])
+				commit, err := readCommit(ctx, githubClient, row["repo_name"], row["ref"])
 				if err != nil {
 					return "", err
 				}
 				return commit.name, nil
+			},
+		},
+		{
+			FieldName: "username",
+			Deps:      []string{"repo_name", "ref"},
+			CacheDeps: []string{"ref"},
+			Run: func(ctx context.Context, row map[string]string) (string, error) {
+				commit, err := readCommit(ctx, githubClient, row["repo_name"], row["ref"])
+				if err != nil {
+					return "", err
+				}
+				return commit.username, nil
 			},
 		},
 		{
