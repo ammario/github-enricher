@@ -7,18 +7,18 @@ bigquery dataset](https://cloud.google.com/blog/topics/public-datasets/github-on
 
 ## Caching
 
-`github-enricher` is design to for fast incremental enrichment. Thus, it requires on Redis and the filesystem
+`github-enricher` is designed for fast incremental enrichment. Thus, it requires on Redis and the filesystem
 for caching.
 
 ### Redis
 
 The `REDIS_ADDR` and `REDIS_PASSWORD` environment variables are used to configure the cache client.
 
-Make sure your redis is persisting (e.g `save 60 1` in your redis.conf) for incremental enrichment to work.
+Make sure your redis is persisting (e.g `save 60 1` in your redis.conf).
 
 ### Filesystem
 
-Even though repos are shallow cloned, large repos can take minutes to retrieve a single commit. Repositories
+Even though repos are shallow cloned, it can take minutes to retrieve a commit from a large repo. All repos
 are cloned to the `github-enricher` folder in your OS tempdir.
 
 ## Columns
@@ -34,7 +34,7 @@ are cloned to the `github-enricher` folder in your OS tempdir.
 | firstname | first word in name                                                                | name               |
 | lastname  | last word in name                                                                 | name               |
 
-Any unrecogized columns are passed through verbatim.
+All unrecogized columns are passed through verbatim.
 
 The first line of the input and output is always a header.
 
